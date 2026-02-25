@@ -1,4 +1,4 @@
-# tgreactsort
+# Telegram Reactions Sorter
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
