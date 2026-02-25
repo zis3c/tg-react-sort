@@ -1,0 +1,5 @@
+telethon
+pandas
+rich
+click
+python-dotenv

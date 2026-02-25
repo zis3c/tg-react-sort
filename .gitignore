@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+
+# Telegram session (contains auth tokens — never commit)
+*.session
+*.session-journal
+
+# API credentials
+config.json
+
+# Generated data
+data/
+
+# Logs
+*.log

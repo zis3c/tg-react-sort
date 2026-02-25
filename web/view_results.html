@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Reactions Viewer</title>
+
+    <!-- Favicon: Paper Plane -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%22-4 -4 32 32%22 fill=%22none%22 stroke=%22%230a84ff%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><line x1=%2222%22 y1=%222%22 x2=%2211%22 y2=%2213%22></line><polygon points=%2222 2 15 22 11 13 2 9 22 2%22></polygon></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Tailwind config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        tg: {
+                            bg: '#0f0f0f',
+                            secondary: '#1c1c1e',
+                            text: '#ffffff',
+                            hint: '#8e8e93',
+                            accent: '#0a84ff',
+                            button: '#0a84ff',
+                            message: '#1c1c1e',
+                            field: '#2c2c2e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="min-h-screen font-sans bg-black text-white antialiased selection:bg-tg-accent selection:text-white">
+
+    <!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+    <header class="sticky top-0 w-full z-20 bg-[#111111]/95 backdrop-blur-xl border-b border-white/[0.06]">
+
+        <!-- Single Row -->
+        <div class="max-w-screen-xl mx-auto px-5 h-14 flex items-center justify-center gap-3">
+
+            <!-- Logo -->
+            <a href="#" class="flex items-center shrink-0 select-none">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 32 32" width="22" height="22" fill="none"
+                    stroke="#0a84ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </a>
+
+            <div class="h-4 w-px bg-white/10 shrink-0"></div>
+
+            <!-- Search -->
+            <div class="relative w-[180px] sm:w-[260px] shrink-0">
+                <input type="text" id="searchInput" placeholder="Search messages…" class="hdr-input">
+                <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600" width="13" height="13"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </div>
+
+            <!-- Filters Button -->
+            <button id="filtersToggle" onclick="toggleFilterDrawer()" class="hdr-btn shrink-0">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                    <line x1="11" y1="18" x2="13" y2="18"></line>
+                </svg>
+                <span class="btn-label">Filters</span>
+                <span id="filterDot"
+                    class="hidden absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-tg-accent"></span>
+            </button>
+
+            <!-- Stats -->
+            <div class="hidden lg:flex items-center shrink-0 ml-2" id="statsBar">
+                <div class="stat-card"><span class="stat-label">Reactions</span><span class="stat-value"
+                        id="statTotalReactions">—</span></div>
+                <div class="stat-card"><span class="stat-label">Msgs</span><span class="stat-value"
+                        id="statMsgCount">—</span><span class="stat-sub" id="statAvg"></span></div>
+                <div class="stat-card"><span class="stat-label">Top</span><span class="stat-value"
+                        id="statTopEmoji">—</span><span class="stat-sub" id="statTopEmojiCount"></span></div>
+                <div class="stat-card"><span class="stat-label">Peak</span><span class="stat-value" id="statTopDay"
+                        style="font-size:11.5px">—</span><span class="stat-sub" id="statTopDayCount"></span></div>
+            </div>
+
+            <div class="h-4 w-px bg-white/10 hidden lg:block shrink-0"></div>
+
+            <!-- Count Badge -->
+            <span id="countDisplay"
+                class="text-xs font-semibold text-tg-accent bg-tg-accent/10 px-2.5 py-1 rounded-md border border-tg-accent/20 shrink-0">
+                0 items
+            </span>
+
+            <!-- New Data Dot -->
+            <button id="newDataDot" onclick="loadFreshData()" title="New data available — click to refresh"
+                class="new-data-dot hidden shrink-0">
+                <span class="new-data-pulse"></span>
+            </button>
+
+            <!-- Starred Toggle -->
+            <button id="starredToggle" class="hdr-btn shrink-0" title="Show bookmarked only">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                    </polygon>
+                </svg>
+                <span class="btn-label">Starred</span>
+            </button>
+
+            <!-- View Toggle -->
+            <div class="view-toggle shrink-0">
+                <button class="view-btn active" id="btnList" onclick="setView('list')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                    List
+                </button>
+                <button class="view-btn" id="btnChart" onclick="setView('chart')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Charts
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Filter Drawer -->
+        <div id="filterDrawer" class="border-t border-white/[0.06] bg-[#0d0d0d]">
+            <div class="max-w-screen-xl mx-auto px-5 py-3 flex items-center gap-3 flex-wrap">
+
+                <!-- Channel (injected by JS) -->
+                <div id="channelSelectContainer"></div>
+
+                <!-- Emoji Filter -->
+                <div class="cdd" id="emojiCdd">
+                    <div class="cdd-trigger" id="emojiTrigger">
+                        <span id="emojiLabel">All Emojis</span>
+                        <svg class="cdd-chev" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="cdd-panel" id="emojiPanel"></div>
+                    <select id="emojiFilter" style="display:none">
+                        <option value="">All Emojis</option>
+                    </select>
+                </div>
+
+                <!-- Sort -->
+                <div class="cdd" id="sortCdd">
+                    <div class="cdd-trigger" id="sortTrigger">
+                        <span id="sortLabel">Most Reactions</span>
+                        <svg class="cdd-chev" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="cdd-panel" id="sortPanel">
+                        <div class="cdd-option selected" data-val="reactions">Most Reactions</div>
+                        <div class="cdd-option" data-val="recent">Most Recent</div>
+                        <div class="cdd-option" data-val="oldest">Oldest First</div>
+                        <div class="cdd-option" data-val="ratio">Best Ratio (rxn/views)</div>
+                        <div class="cdd-option" data-val="velocity">⚡ Fastest Rising</div>
+                    </div>
+                    <select id="sortFilter" style="display:none">
+                        <option value="reactions" selected>Most Reactions</option>
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                </div>
+
+                <!-- Date Range Picker -->
+                <div class="drp" id="drpRoot">
+                    <div class="drp-trigger" id="drpTrigger">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span id="drpLabel">Date Range</span>
+                    </div>
+                    <div class="drp-cal" id="drpCal">
+                        <div class="drp-nav">
+                            <button id="drpPrev">‹</button>
+                            <span id="drpMonthLabel"></span>
+                            <button id="drpNext">›</button>
+                        </div>
+                        <div class="drp-grid" id="drpGrid"></div>
+                        <div class="drp-footer">
+                            <span class="drp-range-label" id="drpRangeLabel">Click to pick start date</span>
+                            <button class="drp-clear" id="drpClear">Clear</button>
+                        </div>
+                    </div>
+                    <input type="date" id="startDate" style="display:none">
+                    <input type="date" id="endDate" style="display:none">
+                </div>
+
+                <!-- Clear All + Export + Shortcuts -->
+                <div class="flex items-center gap-2 ml-auto">
+                    <button onclick="exportFilteredCSV()" title="Export current filtered results as CSV"
+                        class="text-[11px] text-gray-500 hover:text-tg-accent transition-colors flex items-center gap-1">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Export
+                    </button>
+                    <button onclick="toggleShortcutOverlay()" title="Keyboard shortcuts (?)"
+                        class="text-[11px] text-gray-500 hover:text-gray-300 transition-colors font-mono">?</button>
+                    <button onclick="clearAllFilters()"
+                        class="text-[11px] text-gray-500 hover:text-red-400 transition-colors">
+                        Clear all
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Preset Chips Row -->
+            <div class="max-w-screen-xl mx-auto px-5 pb-3">
+                <div id="presetChips">
+                    <button class="preset-chip" data-preset="week" onclick="applyPreset('week')">🔥 This Week</button>
+                    <button class="preset-chip" data-preset="month" onclick="applyPreset('month')">📅 Last 30
+                        Days</button>
+                    <button class="preset-chip" data-preset="viral" onclick="applyPreset('viral')">💥 Most
+                        Viral</button>
+                    <button class="preset-chip" data-preset="top10" onclick="applyPreset('top10')">⭐ Top 10</button>
+                </div>
+            </div>
+        </div>
+
+    </header>
+
+    <!-- ════════════════════════ CHART PANEL ═════════════════════════ -->
+    <div id="chartPanel" class="hidden pt-8 pb-20 px-5 max-w-6xl mx-auto">
+
+        <!-- KPI Cards Row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="kpi-card">
+                <p class="kpi-label">Total Reactions</p>
+                <p class="kpi-value" id="chartSummaryTotal">—</p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Avg per Message</p>
+                <p class="kpi-value" id="chartSummaryAvg">—</p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Peak Day</p>
+                <p class="kpi-value" id="chartSummaryPeak">—</p>
+            </div>
+            <div class="kpi-card">
+                <p class="kpi-label">Top Reaction</p>
+                <p class="kpi-value" id="chartSummaryTop" style="font-size:24px">—</p>
+            </div>
+        </div>
+
+        <!-- Reactions Over Time — full width hero chart -->
+        <div class="chart-card-premium mb-5">
+            <div class="chart-card-header">
+                <div>
+                    <p class="chart-card-title">Reactions Over Time</p>
+                    <p class="chart-card-sub">Daily total reactions — hover to inspect</p>
+                </div>
+                <span id="chartTimePeak" class="chart-badge"></span>
+            </div>
+            <div class="chart-wrap" style="height:280px"><canvas id="chartTime"></canvas></div>
+        </div>
+
+        <!-- Emoji + Velocity row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div class="chart-card-premium">
+                <div class="chart-card-header">
+                    <div>
+                        <p class="chart-card-title">Emoji Breakdown</p>
+                        <p class="chart-card-sub">Top reactions by total count</p>
+                    </div>
+                </div>
+                <div class="chart-wrap" style="height:320px"><canvas id="chartEmoji"></canvas></div>
+            </div>
+            <div class="chart-card-premium">
+                <div class="chart-card-header">
+                    <div>
+                        <p class="chart-card-title">Reaction Velocity</p>
+                        <p class="chart-card-sub">Message distribution by speed (rxn/hr)</p>
+                    </div>
+                    <span id="chartVelPeak" class="chart-badge"></span>
+                </div>
+                <div class="chart-wrap" style="height:320px"><canvas id="chartVelocity"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Top 10 & Keywords row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div class="chart-card-premium">
+                <div class="chart-card-header">
+                    <div>
+                        <p class="chart-card-title">Top 10 Messages</p>
+                        <p class="chart-card-sub">Highest engagement in current filter</p>
+                    </div>
+                </div>
+                <div class="chart-wrap" style="height:360px"><canvas id="chartTop"></canvas></div>
+            </div>
+
+            <div class="chart-card-premium">
+                <div class="chart-card-header">
+                    <div>
+                        <p class="chart-card-title">Top Keywords</p>
+                        <p class="chart-card-sub">Most mentioned words by reaction volume</p>
+                    </div>
+                </div>
+                <div class="chart-wrap" style="height:360px"><canvas id="chartKeywords"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Heatmap — full width -->
+        <div class="chart-card-premium">
+            <div class="chart-card-header">
+                <div>
+                    <p class="chart-card-title">Activity Heatmap</p>
+                    <p class="chart-card-sub">Reactions by day of week × hour — bubble = volume</p>
+                </div>
+            </div>
+            <div class="chart-wrap" style="height:280px"><canvas id="chartHeatmap"></canvas></div>
+        </div>
+
+    </div>
+
+
+    <!-- ═════════════════════ MESSAGE LIST ═══════════════════════════ -->
+    <div class="pt-6 pb-20 px-4 max-w-4xl mx-auto min-h-screen" id="messageList">
+        <!-- Skeleton loaders shown while CSV loads -->
+        <div id="skeletonLoader">
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-line full"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-reactions">
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line full"></div>
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-reactions">
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line full"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-reactions">
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line full"></div>
+                <div class="skeleton-reactions">
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line full"></div>
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-reactions">
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                    <div class="skeleton-pill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App logic -->
+    <script src="app.js"></script>
+
+</body>
+
+</html>
