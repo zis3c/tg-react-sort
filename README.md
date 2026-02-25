@@ -44,6 +44,25 @@ A high-performance Telegram channel analytics tool built with Python and `Teleth
    # Fill in API_ID and API_HASH
    ```
 
+## Project Structure
+
+```
+tg-react-sort/
+├── sort_reactions.py       # Main CLI — fetch, sort, and export messages
+├── requirements.txt        # Python dependencies
+├── .env.example            # Credentials template (copy to .env)
+├── config.json             # Saved API credentials — auto-created, gitignored
+├── files.json              # Registry of imported CSVs used by the web viewer
+├── TOOL_DOCUMENTATION.md   # Capabilities and awareness guide
+├── CONTRIBUTING.md         # Contribution guidelines
+├── data/                   # Exported CSVs — one file per channel, gitignored
+│   └── channel_name.csv
+└── web/                    # Browser-based analytics dashboard
+    ├── view_results.html   # Main dashboard page
+    ├── app.js              # All frontend logic (filters, charts, search)
+    └── styles.css          # Custom styles
+```
+
 ## Usage
 
 ### Interactive Mode
