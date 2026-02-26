@@ -1,14 +1,18 @@
 {
   "files": [
     "data/Save_Palestin.csv",
-    "data/usasconfesss.csv"
+    "data/usasconfesss.csv",
+    "data/infosemasaofficial.csv"
   ],
   "meta": {
     "data/Save_Palestin.csv": {
       "count": 1000
     },
     "data/usasconfesss.csv": {
-      "count": 3574
+      "count": 3602
+    },
+    "data/infosemasaofficial.csv": {
+      "count": 1000
     }
   }
 }

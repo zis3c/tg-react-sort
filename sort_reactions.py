@@ -4,10 +4,6 @@ import os
 import re
 import subprocess
 import logging
-from telethon import TelegramClient
-from telethon.tl.types import Message
-from telethon.errors import ApiIdInvalidError, SessionExpiredError, AuthKeyError, FloodWaitError
-import pandas as pd
 from datetime import datetime, timezone
 import json
 import sys
@@ -42,7 +38,11 @@ SESSION_FILE = 'session_name.session'
 CONFIG_FILE = 'config.json'
 
 async def run_sort(api_id, api_hash, target_channel, limit, top_n, start_date=None, end_date=None, refresh=False, full=False):
-    
+    from telethon import TelegramClient
+    from telethon.tl.types import Message
+    from telethon.errors import ApiIdInvalidError, FloodWaitError
+    import pandas as pd
+
     def parse_date(date_str):
         if not date_str: return None
         try: return datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -120,7 +120,7 @@ async def run_sort(api_id, api_hash, target_channel, limit, top_n, start_date=No
                 df_sorted.to_csv(csv_path, index=False)
                 console.print(f"[bold green]Saved refreshed data to {csv_path}[/bold green]")
                 return
-        async with TelegramClient('session_name', api_id, api_hash) as client:
+
             data = []
             try:
                 entity = await client.get_entity(target_channel)
@@ -193,10 +193,8 @@ async def run_sort(api_id, api_hash, target_channel, limit, top_n, start_date=No
                 log.error(msg)
                 return
             except FloodWaitError as e:
-                wait = e.seconds + 5
-                console.print(f"[bold yellow]⏳ FloodWait: Telegram asks us to wait {e.seconds}s. Retrying in {wait}s...[/bold yellow]")
-                log.warning(f"FloodWaitError: waiting {wait}s")
-                await asyncio.sleep(wait)
+                console.print(f"[bold red]⏳ FloodWait: Telegram asks us to wait {e.seconds}s. Aborting fetch for this channel.[/bold red]")
+                log.warning(f"FloodWaitError: {e.seconds}s wait required. Aborting.")
                 return
             except Exception as e:
                 console.print(f"\n[bold red][!] Error fetching messages:[/bold red] {e}")
@@ -366,9 +364,15 @@ async def run_sort(api_id, api_hash, target_channel, limit, top_n, start_date=No
                         time.sleep(1.2)
                         webbrowser.open(viewer_url)
                     threading.Thread(target=open_browser, daemon=True).start()
-                    console.print(f"[dim]Opening: {viewer_url}[/dim]")
-                    # Start the HTTP server (blocking — keeps the terminal alive)
-                    subprocess.run([sys.executable, "-m", "http.server", "8000"])
+                    # Start the HTTP server if not already running
+                    import socket
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        in_use = s.connect_ex(('localhost', 8000)) == 0
+                    if not in_use:
+                        console.print("[dim]Starting local HTTP server in the background...[/dim]")
+                        subprocess.Popen([sys.executable, "-m", "http.server", "8000"])
+                    else:
+                        console.print("[dim]Local HTTP server is already running on port 8000.[/dim]")
                 except Exception as e:
                     console.print(f"[bold red][!] Could not auto-launch viewer:[/bold red] {e}")
                     console.print(f"[dim]Manually open: http://localhost:8000/web/view_results.html?file={entry}[/dim]")
@@ -430,16 +434,20 @@ def main(channel, channels, limit, top, start_date, end_date, refresh, full, wat
     use_existing_session = False
     
     if os.path.exists(SESSION_FILE):
-        console.print("[*] A saved session was found.", style="bold yellow")
-        choice = Prompt.ask("Do you want to (r)euse it or start (n)ew?", choices=["r", "n"], default="r")
-        if choice == 'r':
+        if channel or channels:
             use_existing_session = True
-            console.print("[*] Using existing session.", style="bold green")
-        elif choice == 'n':
-            os.remove(SESSION_FILE)
-            if os.path.exists(CONFIG_FILE):
-                os.remove(CONFIG_FILE)
-            console.print("[*] Old session deleted. Please enter new credentials.", style="bold cyan")
+            console.print("[*] Reusing existing session.", style="bold green")
+        else:
+            console.print("[*] A saved session was found.", style="bold yellow")
+            choice = Prompt.ask("Do you want to (r)euse it or start (n)ew?", choices=["r", "n"], default="r")
+            if choice == 'r':
+                use_existing_session = True
+                console.print("[*] Using existing session.", style="bold green")
+            elif choice == 'n':
+                os.remove(SESSION_FILE)
+                if os.path.exists(CONFIG_FILE):
+                    os.remove(CONFIG_FILE)
+                console.print("[*] Old session deleted. Please enter new credentials.", style="bold cyan")
 
     # Load from config if reusing session
     if use_existing_session and os.path.exists(CONFIG_FILE):
@@ -504,6 +512,8 @@ def main(channel, channels, limit, top, start_date, end_date, refresh, full, wat
     all_channels = list(channels) if channels else []
     if channel:
         all_channels.insert(0, channel)
+
+    from telethon.errors import SessionExpiredError, AuthKeyError
 
     try:
         if watch:

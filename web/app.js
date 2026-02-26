@@ -570,11 +570,23 @@ function renderMessages() {
             }
         }
 
-        const reactionsHtml = reactionItems.map(item => `
+        // Limit emojis drawn to avoid layout blowout (render max 7 + a remainder pill)
+        const MAX_EMOJI_RENDER = 7;
+        const visibleReactions = reactionItems.slice(0, MAX_EMOJI_RENDER);
+        const hiddenCount = reactionItems.length - MAX_EMOJI_RENDER;
+
+        let reactionsHtml = visibleReactions.map(item => `
             <div class="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-full text-xs font-medium text-gray-300 border border-white/5 transition-colors cursor-default ${item.emoji === selectedEmoji ? 'border-tg-accent/50 bg-tg-accent/15 text-tg-accent' : ''}">
                 <span>${item.emoji}</span>
                 <span class="text-gray-500 ${item.emoji === selectedEmoji ? 'text-tg-accent font-bold' : ''}">${item.count}</span>
             </div>`).join('');
+
+        if (hiddenCount > 0) {
+            reactionsHtml += `
+            <div class="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-full text-[10px] font-medium text-gray-500 border border-white/5 cursor-default" title="${hiddenCount} more reaction types">
+                +${hiddenCount}
+            </div>`;
+        }
 
         const fullDateStr = msg.dateObj.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         const relTime = timeAgo(msg.dateObj);
@@ -604,8 +616,8 @@ function renderMessages() {
         const isUnseen = !seenIds.has(String(msg.id));
 
         return `
-        <div class="list-card-premium msg-card mb-4 relative group ${isUnseen ? ' ring-1 ring-tg-accent/30' : ''}" data-msg-id="${msg.id}" onclick="openMsgModal(${JSON.stringify(msg).replace(/"/g, '&quot;')}, '${searchTerm.replace(/'/g, "\\'")}',' ${channelSlug}', '${tgLink}')">
-            ${isUnseen ? `<span class="absolute top-4 right-4 w-2 h-2 rounded-full bg-tg-accent opacity-90 pointer-events-none box-shadow-glow"></span>` : ''}
+        <div class="list-card-premium msg-card mb-4 relative group ${isUnseen ? 'unread-card' : ''}" data-msg-id="${msg.id}" onclick="openMsgModal(${JSON.stringify(msg).replace(/"/g, '&quot;')}, '${searchTerm.replace(/'/g, "\\'")}',' ${channelSlug}', '${tgLink}')">
+            ${isUnseen ? `<span class="unread-indicator"></span>` : ''}
             <div class="flex justify-between items-start mb-2">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="text-xs font-bold text-tg-accent tracking-wide uppercase opacity-90 shrink-0">${channelSlug || 'Telegram'}</span>
@@ -614,14 +626,14 @@ function renderMessages() {
             </div>
             <div class="msg-body text-[14px] leading-6 text-gray-200 font-normal tracking-wide">${displayText}</div>
             ${metaHtml}
-            <div class="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
+            <div class="flex flex-wrap items-center justify-between mt-3 pt-3 border-t border-white/5 gap-y-3">
                 <div class="flex flex-wrap items-center gap-2">
                     ${reactionsHtml}
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 ml-auto shrink-0">
                     <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" data-bookmark-id="${msg.id}" onclick="event.stopPropagation(); toggleBookmark('${msg.id}')" title="${isBookmarked ? 'Remove bookmark' : 'Bookmark'}">${starSvg(isBookmarked)}</button>
                     <div class="flex items-center gap-1.5 bg-tg-accent/10 px-3 py-1 rounded-lg">
-                        <span class="text-xs font-bold text-tg-accent">Total: ${msg.total_reactions}</span>
+                        <span class="text-xs font-bold text-tg-accent">Total: ${msg.total_reactions.toLocaleString()}</span>
                     </div>
                     <a href="${tgLink}" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1 text-[11px] text-gray-600 hover:text-tg-accent transition-colors" title="Open in Telegram">
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>

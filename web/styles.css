@@ -1167,3 +1167,38 @@ mark.search-highlight {
     background: rgba(10, 132, 255, 0.18);
     border-color: rgba(10, 132, 255, 0.45);
 }
+
+/* ── Unread Pulse Indicator ───────────────────────────── */
+@keyframes tgUnreadPulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 5px rgba(10, 132, 255, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(10, 132, 255, 0);
+    }
+}
+
+.unread-indicator {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #0a84ff;
+    animation: tgUnreadPulse 2s infinite;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.unread-card {
+    /* Kept class around for JS targeting, no background modification so it looks identically matching to other read cards */
+}
