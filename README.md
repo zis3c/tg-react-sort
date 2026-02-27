@@ -10,7 +10,6 @@
 ![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)
 
 ![tgreactsort Web Dashboard Preview](preview.png)
-![tgreactsort Web Dashboard Preview 2](preview1.png)
 
 A high-performance Telegram channel analytics tool built with Python and `Telethon`. Fetches messages from any channel, ranks them by total reactions, and launches a dark-mode web dashboard for deep engagement analysis.
 
