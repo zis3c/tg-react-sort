@@ -18,7 +18,7 @@ A high-performance Telegram channel analytics tool built with Python and `Teleth
 
 ## Features
 
-- 🚀 **Incremental Sync**: Only fetches new messages since the last run — fast and API quota-friendly.
+- 🚀 **Incremental Sync**: Only fetches new messages since the last run - fast and API quota-friendly.
 - 🔄 **Reaction Refresh**: Re-fetches reaction counts for existing messages without re-downloading content.
 - 📚 **Smart Backfill**: Automatically fills historical gaps if the dataset is below your requested limit.
 - 🗂️ **Batch Channels**: Process multiple channels in a single run with `--channels`.
@@ -55,7 +55,7 @@ A high-performance Telegram channel analytics tool built with Python and `Teleth
 
 ```
 tgreactsort/
-├── sort_reactions.py       # Main CLI — fetch, sort, and export messages
+├── sort_reactions.py       # Main CLI - fetch, sort, and export messages
 ├── open_viewer.bat         # Windows shortcut to start HTTP server and open dashboard
 ├── requirements.txt        # Python dependencies
 ├── .env.example            # Credentials template (copy to .env)
@@ -93,14 +93,14 @@ python sort_reactions.py --channel @ExampleChannel --limit 1000 --top 20
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `--channel` | Target channel username or link (`@channel`, `t.me/channel`) | — |
-| `--channels` | Batch mode: multiple channels (repeatable) | — |
+| `--channel` | Target channel username or link (`@channel`, `t.me/channel`) | - |
+| `--channels` | Batch mode: multiple channels (repeatable) | - |
 | `--limit` | Number of recent messages to fetch | `1000` |
 | `--top` | Number of top messages to display in terminal | `10` |
-| `--start-date` | Fetch messages from this date (`YYYY-MM-DD`) | — |
-| `--end-date` | Fetch messages up to this date (`YYYY-MM-DD`) | — |
+| `--start-date` | Fetch messages from this date (`YYYY-MM-DD`) | - |
+| `--end-date` | Fetch messages up to this date (`YYYY-MM-DD`) | - |
 | `--refresh` | Update reaction counts on existing messages only | `False` |
-| `--full` | Ignore cache — full fresh fetch, overwrites CSV | `False` |
+| `--full` | Ignore cache - full fresh fetch, overwrites CSV | `False` |
 | `--watch` | Continuous refresh loop | `False` |
 | `--interval` | Minutes between `--watch` refreshes | `30` |
 
